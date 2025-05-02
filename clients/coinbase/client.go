@@ -2,17 +2,13 @@ package coinbase
 
 import (
 	"bytes"
-	"crypto/hmac"
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"net/http"
-	"os"
-	"strconv"
-	"time"
+
+	"github.com/sberserker/dcagdax/clients/coinbasev3"
 )
 
 type Client struct {
@@ -23,7 +19,7 @@ type Client struct {
 
 func NewClient(secret, key, passphrase string) *Client {
 	client := Client{
-		BaseURL: "https://api.pro.coinbase.com",
+		BaseURL: "https://api.coinbase.com/v2",
 		Secret:  secret,
 		Key:     key,
 	}
@@ -51,34 +47,12 @@ func (c *Client) Request(method string, url string,
 		return res, err
 	}
 
-	timestamp := strconv.FormatInt(time.Now().Unix(), 10)
-	//timestamp = "1702537003"
-
-	// XXX: Sandbox time is off right now
-	if os.Getenv("TEST_COINBASE_OFFSET") != "" {
-		inc, err := strconv.Atoi(os.Getenv("TEST_COINBASE_OFFSET"))
-		if err != nil {
-			return res, err
-		}
-
-		timestamp = strconv.FormatInt(time.Now().Unix()+int64(inc), 10)
-	}
-
-	req.Header.Add("Accept", "application/json")
-	req.Header.Add("Content-Type", "application/json")
-	req.Header.Add("User-Agent", "Baylatent Bot 2.0")
-	req.Header.Add("CB-ACCESS-KEY", c.Key)
-	req.Header.Add("CB-VERSION", "2015-07-22")
-	req.Header.Add("CB-ACCESS-TIMESTAMP", timestamp)
-
-	message := fmt.Sprintf("%s%s/v2%s%s", timestamp, method, url,
-		string(data))
-
-	sig, err := c.generateSig(message, c.Secret)
+	uri := fmt.Sprintf("%s %s/v2%s", method, req.Host, url)
+	jwt, err := coinbasev3.BuildJWT(uri, c.Key, c.Secret)
 	if err != nil {
 		return res, err
 	}
-	req.Header.Add("CB-ACCESS-SIGN", sig)
+	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", jwt))
 
 	client := http.Client{}
 	res, err = client.Do(req)
@@ -111,16 +85,4 @@ func (c *Client) Request(method string, url string,
 	}
 
 	return res, nil
-}
-
-func (c *Client) generateSig(message, secret string) (string, error) {
-	key := []byte(secret)
-	messageBytes := []byte(message)
-
-	hash := hmac.New(sha256.New, key)
-	hash.Write(messageBytes)
-
-	digest := hash.Sum(nil)
-
-	return hex.EncodeToString(digest), nil
 }

@@ -376,7 +376,6 @@ func (c *ApiClient) CreateOrder(req CreateOrderRequest) (CreateOrderData, error)
 type CreateOrderData struct {
 	Success            bool                       `json:"success"`
 	FailureReason      string                     `json:"failure_reason"`
-	OrderId            string                     `json:"order_id"`
 	SuccessResponse    CreateOrderSuccessResponse `json:"success_response"`
 	ErrorResponse      CreatOrderErrorResponse    `json:"error_response"`
 	OrderConfiguration OrderConfiguration         `json:"order_configuration"`

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -38,8 +39,10 @@ func NewCoinbaseV3() (*CoinbaseV3, error) {
 		return nil, errors.New("COINBASE_KEY environment variable is required")
 	}
 
+	// to allow new token pem format be passed via .env file
+	secret = strings.ReplaceAll(secret, `\n`, "\n")
+
 	client := exchange.NewClient(secret, key, "")
-	client.BaseURL = "https://api.coinbase.com/v2"
 	client3 := coinbasev3.NewApiClient(key, secret)
 
 	return &CoinbaseV3{
@@ -101,7 +104,7 @@ func (c *CoinbaseV3) CreateOrder(productId string, amount float64, orderType Ord
 
 	return &Order{
 		Symbol:  order.SuccessResponse.ProductId,
-		OrderID: order.OrderId,
+		OrderID: order.SuccessResponse.OrderId,
 	}, nil
 }
 
@@ -170,6 +173,7 @@ func (c *CoinbaseV3) Deposit(currency string, amount float64) (*time.Time, error
 		Amount:          amount,
 		Currency:        currency,
 		PaymentMethodID: bankAccount.ID,
+		Commit:          true,
 	})
 
 	if err != nil {

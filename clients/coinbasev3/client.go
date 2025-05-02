@@ -33,7 +33,7 @@ type ApiClient struct {
 
 // NewApiClient creates a new Coinbase API client. The API key and secret key are used to sign requests. The default timeout is 10 seconds. The default retry count is 3. The default retry backoff interval is 1 second to 5 seconds.
 func NewApiClient(apiKey, secretKey string, clients ...HttpClient) *ApiClient {
-	if clients != nil && len(clients) > 0 {
+	if len(clients) > 0 {
 		ac := &ApiClient{
 			apiKey:     apiKey,
 			secretKey:  secretKey,
@@ -65,22 +65,24 @@ func newClient(apiKey, secretKey string) *req.Client {
 	client.OnBeforeRequest(func(client *req.Client, req *req.Request) error {
 		// create a secret key from: `timestamp + method + requestPath + body`
 		path := ""
+		host := ""
 		if req.RawURL != "" {
 			u, err := url.Parse(req.RawURL)
 			if err != nil {
 				return err
 			}
 			path = u.Path
+			host = u.Host
 		} else {
 			return fmt.Errorf("no path found")
 		}
 
-		sig := fmt.Sprintf("%d%s%s%s", time.Now().Unix(), req.Method, path, req.Body)
-		signedSig := string(SignHmacSha256(sig, secretKey))
-
-		client.Headers.Set("CB-ACCESS-KEY", apiKey)
-		client.Headers.Set("CB-ACCESS-SIGN", signedSig)
-		client.Headers.Set("CB-ACCESS-TIMESTAMP", fmt.Sprintf("%d", time.Now().Unix()))
+		uri := fmt.Sprintf("%s %s%s", req.Method, host, path)
+		jwt, err := BuildJWT(uri, apiKey, secretKey)
+		if err != nil {
+			return err
+		}
+		client.Headers.Set("Authorization", fmt.Sprintf("Bearer %s", jwt))
 		return nil
 	})
 

@@ -22,10 +22,11 @@ type DepositParams struct {
 	Amount          float64 `json:"amount,string"`
 	Currency        string  `json:"currency"`
 	PaymentMethodID string  `json:"payment_method"`
+	Commit          bool    `json:"commit"`
 }
 
 type DepositResponse struct {
-	Data Deposit `json:"data"`
+	Data Deposit `json:"transfer"`
 }
 
 func (c *Client) ListPaymentMethods() ([]PaymentMethod, error) {
@@ -47,16 +48,22 @@ type ListDeposits struct {
 }
 
 type Deposit struct {
-	Amount    Amount    `json:"amount"`
-	Subtotal  Amount    `json:"subtotal"`
-	Fee       Amount    `json:"fee"`
-	CreatedAt time.Time `json:"created_at,string"`
-	UpdatedAt time.Time `json:"updated_at,string"`
-	PayoutAt  time.Time `json:"payout_at,string"`
+	Id                string    `json:"id"`
+	Status            string    `json:"status"`
+	Commited          bool      `json:"commited"`
+	Instant           bool      `json:"instant"`
+	Amount            Amount    `json:"amount"`
+	UserEnteredAmount Amount    `json:"user_entered_amount"`
+	Total             Amount    `json:"total"`
+	Subtotal          Amount    `json:"subtotal"`
+	Fee               Amount    `json:"fee"`
+	CreatedAt         time.Time `json:"created_at,string"`
+	UpdatedAt         time.Time `json:"updated_at,string"`
+	PayoutAt          time.Time `json:"payout_at,string"`
 }
 
 type Amount struct {
-	Amount   float64 `json:"amount,string"`
+	Amount   float64 `json:"value,string"`
 	Currency string  `json:"currency"`
 }
 
