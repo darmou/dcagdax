@@ -1,19 +1,11 @@
-# DCA Coinbase, Ftx, Gemini
+# DCA Coinbase
 
 Automated dollar cost averaging for BTC, LTC, BCH and ETH on Coinbase.
-Inspired by https://github.com/blampe/dcagdax
+Origonal from https://github.com/sberserker/dcagdax
 Added the following features
-- automatic deposits
-- fixed ledger api dependency package. Had to move the package inside as well
-- added percentage buys
-- added force flag to buy now regardless of the window check, will ask for confirmation
-- added after flag
-- added support for geminit and ftx/ftx.us exchanges
-- added limit order type support
-- added some unit tests
+- support for coinbase with new advanced api
 
-Note Ftx and Gemini do not support funding over api at the moment. Autofund periodically manually if you plan to use those exchanges.
-Ftx and Gemini do not support market order type. Use limit order type with the following flags to successfully execute trade.
+
 ```
 --type limit
 --spread % to increase ask price to accommodate possible price fluctuation when order is placed. Default: 1
@@ -23,7 +15,26 @@ Limit order may spend a little less every purchase to accommodate spread and fee
 Unused portion will be left on exchange and included into a next order.
 ## Setup
 
-If you only have a Coinbase account you'll need to also sign into
+You will need to set up environment variables for your API keys.
+
+This can done using an .env file or a shell script, for example:
+```agsl
+#!/bin/bash
+
+export COINBASE_SECRET="-----BEGIN EC PRIVATE KEY-----
+<YOUR EC PRIVATE KEY>
+-----END EC PRIVATE KEY-----"
+
+export COINBASE_KEY="<YOUR EC ID"
+
+export PORTFOLIO_ID="<YOUR PORTFOLIO ID>" // UUID that can be found in network request in developer tools when you clck on the profile in the left menu GET
+	https://login.coinbase.com/api/v2/profile-menu
+
+/<folder where dcagdax executable is found>/dcagdax "$@"
+```
+
+
+You will need to also sign into
 [Coinbase](https://pro.coinbase.com/). Make sure you have a bank account linked to one of these for
 ACH transfers.
 
@@ -62,28 +73,6 @@ Flags:
   --spread=1.0           Percentage to add above ask price to get limit order executed. Default: 1.0
   --fee=0.5              Fee level to exclude from limit order amount. Default: 0.5
   --version              Show application version.
-```
-
-Run the `dcagdax` binary with an environment containing your API credentials:
-For Coinbase
-```
-$ COINBASE_SECRET=secret \
-  COINBASE_KEY=key \
-  ./dcagdax --help
-```
-
-For Gemini
-```
-$ GEMINI_SECRET=secret \
-  GEMINI_KEY=key \
-  ./dcagdax --help
-```
-
-For Ftx/Ftx.us
-```
-$ FTX_SECRET=secret \
-  FTX_KEY=key \
-  ./dcagdax --help
 ```
 
 Be aware that if you set your purchase amount near 0.01 BTC (the minimum trade
@@ -146,10 +135,6 @@ as part of your deployment!
 **Q:** Which coins can I purchase?
 
 **A:** We support all of Coinbase's products: BTC, LTC, BCH and ETH.
-
-**Q:** Can I buy you a beer?
-
-**A:** BTC 1KZhfEWkwH8A7L1Dm9MoHwUKkrEEHrFjgB
 
 
 ## Development references
