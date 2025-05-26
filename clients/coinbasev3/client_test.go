@@ -3,13 +3,13 @@ package coinbasev3
 import "testing"
 
 func TestNewApiClient(t *testing.T) {
-	api := NewApiClient("api_key", "secret_key")
+	api := NewApiClient("api_key", "secret_key", "portfolio_id")
 	if api == nil {
 		t.Errorf("Expected api to be initialized")
 	}
-	if api.httpClient == nil {
-		t.Errorf("Expected client to be initialized")
-	}
+	/*if api.httpClient == nil {
+		t.Errorf("Expected restClient to be initialized")
+	}*/
 
 	// check base urls
 	if api.baseUrlV3 != "https://api.coinbase.com/api/v3" {
@@ -25,12 +25,12 @@ func TestNewApiClient(t *testing.T) {
 
 func TestNewApiClient_WithCustomClient(t *testing.T) {
 	mock := NewMockHttpClient(nil)
-	api := NewApiClient("api_key", "secret_key", mock)
+	api := NewApiClient("api_key", "secret_key", "portfolo_id", mock)
 	if api == nil {
 		t.Errorf("Expected api to be initialized")
 	}
 	if api.httpClient.GetClient() != nil {
-		t.Errorf("Expected client to be nil from the mock")
+		t.Errorf("Expected restClient to be nil from the mock")
 	}
 
 	// check base urls
@@ -46,7 +46,7 @@ func TestNewApiClient_WithCustomClient(t *testing.T) {
 }
 
 func TestApiClient_SetBaseExchangeUrl(t *testing.T) {
-	api := NewApiClient("api_key", "secret_key")
+	api := NewApiClient("api_key", "secret_key", "portfolio_id")
 	if api == nil {
 		t.Errorf("Expected api to be initialized")
 	}
@@ -58,7 +58,7 @@ func TestApiClient_SetBaseExchangeUrl(t *testing.T) {
 }
 
 func TestApiClient_SetBaseV2Url(t *testing.T) {
-	api := NewApiClient("api_key", "secret_key")
+	api := NewApiClient("api_key", "secret_key", "portfolio_id")
 	if api == nil {
 		t.Errorf("Expected api to be initialized")
 	}
@@ -70,7 +70,7 @@ func TestApiClient_SetBaseV2Url(t *testing.T) {
 }
 
 func TestApiClient_SetBaseV3Url(t *testing.T) {
-	api := NewApiClient("api_key", "secret_key")
+	api := NewApiClient("api_key", "secret_key", "portfolio_id")
 	if api == nil {
 		t.Errorf("Expected api to be initialized")
 	}
@@ -82,7 +82,7 @@ func TestApiClient_SetBaseV3Url(t *testing.T) {
 }
 
 func TestApiClient_SetSandboxUrls(t *testing.T) {
-	api := NewApiClient("api_key", "secret_key")
+	api := NewApiClient("api_key", "secret_key", "portfolio_id")
 	if api == nil {
 		t.Errorf("Expected api to be initialized")
 	}

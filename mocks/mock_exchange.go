@@ -5,6 +5,7 @@
 package mocks
 
 import (
+	"context"
 	reflect "reflect"
 	time "time"
 
@@ -36,46 +37,46 @@ func (m *MockExchange) EXPECT() *MockExchangeMockRecorder {
 }
 
 // CreateOrder mocks base method.
-func (m *MockExchange) CreateOrder(arg0 string, arg1 float64, arg2 exchanges.OrderTypeType, arg3 exchanges.CalcLimitOrder) (*exchanges.Order, error) {
+func (m *MockExchange) CreateOrder(arg0 context.Context, arg1 string, arg2 float64, arg3 exchanges.OrderTypeType, arg4 exchanges.CalcLimitOrder) (*exchanges.Order, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateOrder", arg0, arg1, arg2, arg3)
+	ret := m.ctrl.Call(m, "CreateOrder", arg0, arg1, arg2, arg3, arg4)
 	ret0, _ := ret[0].(*exchanges.Order)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // CreateOrder indicates an expected call of CreateOrder.
-func (mr *MockExchangeMockRecorder) CreateOrder(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+func (mr *MockExchangeMockRecorder) CreateOrder(arg0, arg1, arg2, arg3, arg4 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateOrder", reflect.TypeOf((*MockExchange)(nil).CreateOrder), arg0, arg1, arg2, arg3)
 }
 
 // Deposit mocks base method.
-func (m *MockExchange) Deposit(arg0 string, arg1 float64) (*time.Time, error) {
+func (m *MockExchange) Deposit(arg0 context.Context, arg1 string, arg2 float64) (*time.Time, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Deposit", arg0, arg1)
+	ret := m.ctrl.Call(m, "Deposit", arg0, arg1, arg2)
 	ret0, _ := ret[0].(*time.Time)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Deposit indicates an expected call of Deposit.
-func (mr *MockExchangeMockRecorder) Deposit(arg0, arg1 interface{}) *gomock.Call {
+func (mr *MockExchangeMockRecorder) Deposit(arg0, arg1, arg2 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Deposit", reflect.TypeOf((*MockExchange)(nil).Deposit), arg0, arg1)
 }
 
 // GetFiatAccount mocks base method.
-func (m *MockExchange) GetFiatAccount(arg0 string) (*exchanges.Account, error) {
+func (m *MockExchange) GetFiatAccount(arg0 context.Context, arg1 string) (*exchanges.Account, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetFiatAccount", arg0)
+	ret := m.ctrl.Call(m, "GetFiatAccount", arg0, arg1)
 	ret0, _ := ret[0].(*exchanges.Account)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetFiatAccount indicates an expected call of GetFiatAccount.
-func (mr *MockExchangeMockRecorder) GetFiatAccount(arg0 interface{}) *gomock.Call {
+func (mr *MockExchangeMockRecorder) GetFiatAccount(arg0 context.Context, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFiatAccount", reflect.TypeOf((*MockExchange)(nil).GetFiatAccount), arg0)
 }
@@ -96,9 +97,9 @@ func (mr *MockExchangeMockRecorder) GetPendingTransfers(arg0 interface{}) *gomoc
 }
 
 // GetProduct mocks base method.
-func (m *MockExchange) GetProduct(arg0 string) (*exchanges.Product, error) {
+func (m *MockExchange) GetProduct(arg0 context.Context, arg1 string) (*exchanges.Product, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetProduct", arg0)
+	ret := m.ctrl.Call(m, "GetProduct", arg0, arg1)
 	ret0, _ := ret[0].(*exchanges.Product)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
@@ -111,9 +112,9 @@ func (mr *MockExchangeMockRecorder) GetProduct(arg0 interface{}) *gomock.Call {
 }
 
 // GetTicker mocks base method.
-func (m *MockExchange) GetTicker(arg0 string) (*exchanges.Ticker, error) {
+func (m *MockExchange) GetTicker(arg0 context.Context, arg1 string) (*exchanges.Ticker, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetTicker", arg0)
+	ret := m.ctrl.Call(m, "GetTicker", arg0, arg1)
 	ret0, _ := ret[0].(*exchanges.Ticker)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
@@ -140,9 +141,9 @@ func (mr *MockExchangeMockRecorder) GetTickerSymbol(arg0, arg1 interface{}) *gom
 }
 
 // LastPurchaseTime mocks base method.
-func (m *MockExchange) LastPurchaseTime(arg0, arg1 string, arg2 time.Time) (*time.Time, error) {
+func (m *MockExchange) LastPurchaseTime(arg0 context.Context, arg1, arg2 string, arg3 time.Time) (*time.Time, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "LastPurchaseTime", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "LastPurchaseTime", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].(*time.Time)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1

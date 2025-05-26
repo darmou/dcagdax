@@ -3,6 +3,7 @@ package exchanges
 //go:generate mockgen -destination=../mocks/mock_exchange.go -package=mocks github.com/sberserker/dcagdax/exchanges Exchange
 
 import (
+	"context"
 	"time"
 
 	"github.com/shopspring/decimal"
@@ -13,17 +14,17 @@ type CalcLimitOrder func(askPrice decimal.Decimal, fiatAmount decimal.Decimal) (
 type Exchange interface {
 	GetTickerSymbol(baseCurrency string, quoteCurrency string) string
 
-	GetTicker(productId string) (*Ticker, error)
+	GetTicker(ctx context.Context, productId string) (*Ticker, error)
 
-	GetProduct(productId string) (*Product, error)
+	GetProduct(ctx context.Context, productId string) (*Product, error)
 
-	Deposit(currency string, amount float64) (*time.Time, error)
+	Deposit(ctx context.Context, currency string, amount float64) (*time.Time, error)
 
-	CreateOrder(productId string, amount float64, orderType OrderTypeType, limitOrderFunc CalcLimitOrder) (*Order, error)
+	CreateOrder(ctx context.Context, productId string, amount float64, orderType OrderTypeType, limitOrderFunc CalcLimitOrder) (*Order, error)
 
-	LastPurchaseTime(ticker string, currency string, since time.Time) (*time.Time, error)
+	LastPurchaseTime(ctx context.Context, coin string, currency string, since time.Time) (*time.Time, error)
 
-	GetFiatAccount(currency string) (*Account, error)
+	GetFiatAccount(ctx context.Context, currency string) (*Account, error)
 
 	GetPendingTransfers(currency string) ([]PendingTransfer, error)
 }

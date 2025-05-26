@@ -4,11 +4,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/coinbase-samples/advanced-trade-sdk-go/client"
+	"github.com/coinbase-samples/advanced-trade-sdk-go/credentials"
+	"github.com/imroc/req/v3"
+	"log"
 	"net/url"
 	"strings"
 	"time"
-
-	"github.com/imroc/req/v3"
 )
 
 var (
@@ -24,6 +26,7 @@ type HttpClient interface {
 type ApiClient struct {
 	apiKey          string
 	secretKey       string
+	restClient      client.RestClient
 	client          *req.Client
 	httpClient      HttpClient
 	baseUrlV3       string
@@ -31,12 +34,26 @@ type ApiClient struct {
 	baseExchangeUrl string
 }
 
-// NewApiClient creates a new Coinbase API client. The API key and secret key are used to sign requests. The default timeout is 10 seconds. The default retry count is 3. The default retry backoff interval is 1 second to 5 seconds.
-func NewApiClient(apiKey, secretKey string, clients ...HttpClient) *ApiClient {
+// NewApiClient creates a new Coinbase API restClient. The API key and secret key are used to sign requests. The default timeout is 10 seconds. The default retry count is 3. The default retry backoff interval is 1 second to 5 seconds.
+func NewApiClient(apiKey string, secretKey string, portfolioId string, clients ...HttpClient) *ApiClient {
+	credentials := &credentials.Credentials{
+		AccessKey:     apiKey,
+		PrivatePemKey: secretKey,
+		PortfolioId:   portfolioId,
+	}
+
+	httpClient, err := client.DefaultHttpClient()
+	if err != nil {
+		log.Fatalf("unable to load default http restClient: %v", err)
+	}
+
+	restClient := client.NewRestClient(credentials, httpClient)
+
 	if len(clients) > 0 {
 		ac := &ApiClient{
 			apiKey:     apiKey,
 			secretKey:  secretKey,
+			restClient: restClient,
 			client:     newClient(apiKey, secretKey),
 			httpClient: clients[0],
 		}
@@ -44,13 +61,11 @@ func NewApiClient(apiKey, secretKey string, clients ...HttpClient) *ApiClient {
 		return ac
 	}
 
-	client := newClient(apiKey, secretKey)
-
 	ac := &ApiClient{
 		apiKey:     apiKey,
 		secretKey:  secretKey,
-		client:     client,
-		httpClient: &ReqClient{client: client},
+		restClient: restClient,
+		httpClient: &ReqClient{client: newClient(apiKey, secretKey)},
 	}
 	ac.setBaseUrls()
 	return ac
@@ -88,7 +103,9 @@ func newClient(apiKey, secretKey string) *req.Client {
 
 	return client
 }
-
+func (c *ApiClient) GetClient() client.RestClient {
+	return c.restClient
+}
 func (c *ApiClient) get(url string, out interface{}) ([]byte, error) {
 	resp, err := c.httpClient.Get(url)
 	if err != nil {

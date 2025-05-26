@@ -22,7 +22,7 @@ var (
 	ErrNotConnected       = fmt.Errorf("not connected")
 )
 
-// WsClientConfig is the configuration struct for creating a new websocket client.
+// WsClientConfig is the configuration struct for creating a new websocket restClient.
 type WsClientConfig struct {
 	Url          string             // optional. defaults to "wss://advanced-trade-ws.coinbase.com"
 	ReadChannel  chan []byte        // required for receiving messages from the websocket connection
@@ -47,7 +47,7 @@ func NewWsClientConfig(apiKey, secretKey string, readCh chan []byte, wsChannels 
 	}
 }
 
-// tryValidate validates the websocket client configuration.
+// tryValidate validates the websocket restClient configuration.
 func (c *WsClientConfig) tryValidate() error {
 	if c.ApiKey == "" {
 		return ErrNoApiKey
@@ -74,7 +74,7 @@ func (c *WsClientConfig) tryValidate() error {
 	return nil
 }
 
-// WsClient is an automatically reconnecting websocket client.
+// WsClient is an automatically reconnecting websocket restClient.
 type WsClient struct {
 	conn          *websocket.Conn
 	url           string
@@ -103,7 +103,7 @@ type callbacks struct {
 	onReconnect  func()
 }
 
-// NewWsClient creates a new websocket client.
+// NewWsClient creates a new websocket restClient.
 func NewWsClient(cfg WsClientConfig) (*WsClient, error) {
 	err := cfg.tryValidate()
 	if err != nil {

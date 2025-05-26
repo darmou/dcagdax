@@ -1,8 +1,16 @@
 package exchanges
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"github.com/coinbase-samples/advanced-trade-sdk-go/accounts"
+	"github.com/coinbase-samples/advanced-trade-sdk-go/client"
+	"github.com/coinbase-samples/advanced-trade-sdk-go/model"
+	"github.com/coinbase-samples/advanced-trade-sdk-go/orders"
+	"github.com/coinbase-samples/advanced-trade-sdk-go/paymentmethods"
+	"github.com/coinbase-samples/advanced-trade-sdk-go/portfolios"
+	"github.com/coinbase-samples/advanced-trade-sdk-go/products"
 	"os"
 	"strconv"
 	"strings"
@@ -15,9 +23,14 @@ import (
 )
 
 type CoinbaseV3 struct {
-	client3  *coinbasev3.ApiClient
-	client   *exchange.Client
-	accounts map[string]*account
+	portfolio       portfolios.PortfoliosService
+	products        products.ProductsService
+	payment         paymentmethods.PaymentMethodsService
+	accountsService accounts.AccountsService
+	orders          orders.OrdersService
+	client3         client.RestClient
+	client          *exchange.Client
+	accounts        map[string]*account
 }
 
 type account struct {
@@ -30,6 +43,7 @@ type account struct {
 func NewCoinbaseV3() (*CoinbaseV3, error) {
 	secret := os.Getenv("COINBASE_SECRET")
 	key := os.Getenv("COINBASE_KEY")
+	portfolioId := os.Getenv("PORTFOLIO_ID")
 
 	if secret == "" {
 		return nil, errors.New("COINBASE_SECRET environment variable is required")
@@ -39,25 +53,43 @@ func NewCoinbaseV3() (*CoinbaseV3, error) {
 		return nil, errors.New("COINBASE_KEY environment variable is required")
 	}
 
+	if portfolioId == "" {
+		return nil, errors.New("PORTFOLIO_ID environment variable is required")
+	}
+
 	// to allow new token pem format be passed via .env file
 	secret = strings.ReplaceAll(secret, `\n`, "\n")
 
 	client := exchange.NewClient(secret, key, "")
-	client3 := coinbasev3.NewApiClient(key, secret)
+	client3 := coinbasev3.NewApiClient(key, secret, portfolioId)
+	portfolio := portfolios.NewPortfoliosService(client3.GetClient())
+	products := products.NewProductsService(client3.GetClient())
+	payment := paymentmethods.NewPaymentMethodsService(client3.GetClient())
+	orders := orders.NewOrdersService(client3.GetClient())
+	accountsService := accounts.NewAccountsService(client3.GetClient())
 
 	return &CoinbaseV3{
-		accounts: map[string]*account{},
-		client3:  client3,
-		client:   client,
+		accounts:        map[string]*account{},
+		portfolio:       portfolio,
+		products:        products,
+		accountsService: accountsService,
+		payment:         payment,
+		orders:          orders,
+		client3:         client3.GetClient(),
+		client:          client,
 	}, nil
 }
 
-func (c *CoinbaseV3) CreateOrder(productId string, amount float64, orderType OrderTypeType, limitOrderFunc CalcLimitOrder) (*Order, error) {
+func (c *CoinbaseV3) CreateOrder(ctx context.Context, productId string, amount float64, orderType OrderTypeType, limitOrderFunc CalcLimitOrder) (*Order, error) {
 
-	var orderReq coinbasev3.CreateOrderRequest
+	var orderReq orders.CreateOrderRequest
 
 	if orderType == Limit {
-		trades, err := c.client3.GetMarketTrades(productId, 10)
+		marketTradeRequest := products.GetMarketTradesRequest{
+			ProductId: productId,
+			Limit:     "10",
+		}
+		trades, err := c.products.GetMarketTrades(ctx, &marketTradeRequest)
 		if err != nil {
 			return nil, err
 		}
@@ -68,31 +100,44 @@ func (c *CoinbaseV3) CreateOrder(productId string, amount float64, orderType Ord
 		}
 		orderPrice, orderSize := limitOrderFunc(bestAsk, decimal.NewFromFloat(amount))
 
-		orderReq = coinbasev3.CreateOrderRequest{
-			ClientOrderID: uuid.NewString(),
-			ProductID:     productId,
-			Side:          coinbasev3.OrderSideBuy,
-			OrderConfiguration: coinbasev3.OrderConfiguration{
-				LimitLimitGtc: &coinbasev3.LimitLimitGtc{
-					BaseSize:   orderPrice.String(),
-					LimitPrice: orderSize.String(),
-				},
+		orderConfig := model.OrderConfiguration{
+			LimitLimitGtc: &model.LimitGtc{
+				BaseSize:   orderPrice.String(),
+				LimitPrice: orderSize.String(),
 			},
+		}
+		orderReq = orders.CreateOrderRequest{
+			ProductId:          productId,
+			OrderConfiguration: orderConfig,
+			Side:               coinbasev3.OrderSideBuy,
+			ClientOrderId:      uuid.NewString(),
 		}
 	} else {
-		orderReq = coinbasev3.CreateOrderRequest{
-			ClientOrderID: uuid.NewString(),
-			ProductID:     productId,
-			Side:          coinbasev3.OrderSideBuy,
-			OrderConfiguration: coinbasev3.OrderConfiguration{
-				MarketMarketIoc: &coinbasev3.MarketMarketIoc{
-					QuoteSize: decimal.NewFromFloat(amount).StringFixedBank(2),
-				},
+		orderConfig := model.OrderConfiguration{
+			MarketMarketIoc: &model.MarketIoc{
+				QuoteSize: decimal.NewFromFloat(amount).StringFixedBank(2),
 			},
 		}
+		orderReq = orders.CreateOrderRequest{
+			ProductId:          productId,
+			OrderConfiguration: orderConfig,
+			Side:               coinbasev3.OrderSideBuy,
+			ClientOrderId:      uuid.NewString(),
+		}
+	}
+	orderConfig := model.OrderConfiguration{
+		MarketMarketIoc: &model.MarketIoc{
+			QuoteSize: decimal.NewFromFloat(amount).StringFixedBank(2),
+		},
+	}
+	orderReq = orders.CreateOrderRequest{
+		ProductId:          productId,
+		OrderConfiguration: orderConfig,
+		Side:               coinbasev3.OrderSideBuy,
+		ClientOrderId:      uuid.NewString(),
 	}
 
-	order, err := c.client3.CreateOrder(orderReq)
+	order, err := c.orders.CreateOrder(ctx, &orderReq)
 
 	if err != nil {
 		return nil, err
@@ -112,8 +157,12 @@ func (c *CoinbaseV3) GetTickerSymbol(baseCurrency string, quoteCurrency string) 
 	return baseCurrency + "-" + quoteCurrency
 }
 
-func (c *CoinbaseV3) GetTicker(productId string) (*Ticker, error) {
-	ticker, err := c.client3.GetMarketTrades(productId, 10)
+func (c *CoinbaseV3) GetTicker(ctx context.Context, productId string) (*Ticker, error) {
+	marketTradeRequest := products.GetMarketTradesRequest{
+		ProductId: productId,
+		Limit:     "10",
+	}
+	ticker, err := c.products.GetMarketTrades(ctx, &marketTradeRequest)
 	if err != nil {
 		return nil, err
 	}
@@ -126,9 +175,11 @@ func (c *CoinbaseV3) GetTicker(productId string) (*Ticker, error) {
 	return &Ticker{Price: bestAsk}, nil
 }
 
-func (c *CoinbaseV3) GetProduct(productId string) (*Product, error) {
-	product, err := c.client3.GetProduct(productId)
-
+func (c *CoinbaseV3) GetProduct(ctx context.Context, productId string) (*Product, error) {
+	productRequest := products.GetProductRequest{
+		ProductId: productId,
+	}
+	product, err := c.products.GetProduct(ctx, &productRequest)
 	if err != nil {
 		return nil, err
 	}
@@ -145,23 +196,23 @@ func (c *CoinbaseV3) GetProduct(productId string) (*Product, error) {
 	}, nil
 }
 
-func (c *CoinbaseV3) Deposit(currency string, amount float64) (*time.Time, error) {
-	account, err := c.accountFor(currency) //taking the first coins a marker, make sure to put your main coin first
+func (c *CoinbaseV3) Deposit(ctx context.Context, currency string, amount float64) (*time.Time, error) {
+	account, err := c.accountFor(ctx, currency) //taking the first coins a marker, make sure to put your main coin first
+	if err != nil {
+		return nil, err
+	}
+	paymentMethodRequest := paymentmethods.ListPaymentMethodsRequest{}
+	paymentMethods, err := c.payment.ListPaymentMethods(ctx, &paymentMethodRequest)
+
 	if err != nil {
 		return nil, err
 	}
 
-	paymentMethods, err := c.client3.GetPaymentMethods()
-
-	if err != nil {
-		return nil, err
-	}
-
-	var bankAccount *coinbasev3.PaymentMethod = nil
+	var bankAccount *model.PaymentMethod = nil
 
 	for i := range paymentMethods.PaymentMethods {
 		if paymentMethods.PaymentMethods[i].Type == "ACH" {
-			bankAccount = &paymentMethods.PaymentMethods[i]
+			bankAccount = paymentMethods.PaymentMethods[i]
 		}
 	}
 
@@ -172,7 +223,7 @@ func (c *CoinbaseV3) Deposit(currency string, amount float64) (*time.Time, error
 	depositResponse, err := c.client.Deposit(account.Id, exchange.DepositParams{
 		Amount:          amount,
 		Currency:        currency,
-		PaymentMethodID: bankAccount.ID,
+		PaymentMethodID: bankAccount.Id,
 		Commit:          true,
 	})
 
@@ -184,10 +235,12 @@ func (c *CoinbaseV3) Deposit(currency string, amount float64) (*time.Time, error
 	return &payoutAt, nil
 }
 
-func (c *CoinbaseV3) LastPurchaseTime(coin string, currency string, since time.Time) (*time.Time, error) {
+func (c *CoinbaseV3) LastPurchaseTime(ctx context.Context, coin string, currency string, since time.Time) (*time.Time, error) {
 
-	orders, err := c.client3.GetListOrders(coinbasev3.ListOrdersQuery{
-		ProductId:   c.GetTickerSymbol(coin, currency),
+	productIds := make([]string, 1)
+	productIds[0] = c.GetTickerSymbol(coin, currency)
+	orderList, err := c.orders.ListOrders(ctx, &orders.ListOrdersRequest{
+		ProductIds:  productIds,
 		StartDate:   since.Format("2006-01-02T15:04:05.999999999Z07:00"),
 		OrderStatus: []string{"FILLED"},
 	})
@@ -196,16 +249,23 @@ func (c *CoinbaseV3) LastPurchaseTime(coin string, currency string, since time.T
 		return nil, err
 	}
 
-	if len(orders.Orders) > 0 {
-		return &orders.Orders[0].CreatedTime, nil
+	if len(orderList.Orders) > 0 {
+		layout := time.RFC3339 // This is the layout matching the string format
+
+		t, err := time.Parse(layout, orderList.Orders[0].CreatedTime)
+		if err != nil {
+			fmt.Println("Error:", err)
+			return nil, err
+		}
+		return &t, nil
 	}
 
 	return nil, nil
 }
 
-func (c *CoinbaseV3) GetFiatAccount(currency string) (*Account, error) {
+func (c *CoinbaseV3) GetFiatAccount(ctx context.Context, currency string) (*Account, error) {
 
-	account, err := c.accountFor(currency)
+	account, err := c.accountFor(ctx, currency)
 	if err != nil {
 		return nil, err
 	}
@@ -240,14 +300,19 @@ func (c *CoinbaseV3) GetPendingTransfers(currency string) ([]PendingTransfer, er
 	return pendingTransfers, nil
 }
 
-func (c *CoinbaseV3) accountFor(currencyCode string) (*account, error) {
+func (c *CoinbaseV3) accountFor(ctx context.Context, currencyCode string) (*account, error) {
 
 	// cache accounts
 	if a, found := c.accounts[currencyCode]; found {
 		return a, nil
 	}
-
-	accounts, err := c.client3.ListAccounts(100, "")
+	listAccountsRequest := accounts.ListAccountsRequest{
+		Pagination: &model.PaginationParams{
+			Cursor: "",
+			Limit:  "100",
+		},
+	}
+	accounts, err := c.accountsService.ListAccounts(ctx, &listAccountsRequest)
 	if err != nil {
 		return nil, err
 	}

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"regexp"
@@ -86,6 +87,7 @@ func main() {
 	kingpin.Parse()
 
 	config := zap.NewProductionConfig()
+	ctx := context.Background()
 	config.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
 	l, _ := config.Build()
 	logger := l.Sugar()
@@ -122,12 +124,15 @@ func main() {
 		currency:    *currency,
 	}
 
+	fmt.Printf("About to schedule")
 	schedule, err := newGdaxSchedule(
+		ctx,
 		exchange,
 		logger,
 		!*makeTrades,
 		req,
 	)
+	fmt.Printf("Done scheduling")
 
 	if err != nil {
 		logger.Warn(err.Error())
@@ -143,12 +148,6 @@ func initExchange(exType string) (exchange exchanges.Exchange, err error) {
 	switch exType {
 	case "coinbase":
 		exchange, err = exchanges.NewCoinbaseV3()
-	case "gemini":
-		exchange, err = exchanges.NewGemini()
-	case "ftxus":
-		exchange, err = exchanges.NewFtx(true)
-	case "ftx":
-		exchange, err = exchanges.NewFtx(false)
 	default:
 		return nil, fmt.Errorf("unsupported exchange %s", exType)
 	}

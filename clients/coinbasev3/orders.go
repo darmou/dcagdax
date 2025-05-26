@@ -18,12 +18,10 @@ const (
 	OrderTypeUnknown   OrderType = "UNKNOWN_ORDER_TYPE"
 )
 
-type OrderSide string
-
 const (
-	OrderSideBuy     OrderSide = "BUY"
-	OrderSideSell    OrderSide = "SELL"
-	OrderSideUnknown OrderSide = "UNKNOWN_ORDER_SIDE"
+	OrderSideBuy     string = "BUY"
+	OrderSideSell    string = "SELL"
+	OrderSideUnknown string = "UNKNOWN_ORDER_SIDE"
 )
 
 type OrderPlacementSource string
@@ -147,7 +145,7 @@ type ListOrdersQuery struct {
 	// OrderType Type of orders to return. Default is to return all order types.
 	OrderType OrderType `json:"order_type,omitempty"`
 	// OrderSide Only orders matching this side are returned. Default is to return all sides.
-	OrderSide OrderSide `json:"order_side,omitempty"`
+	OrderSide string `json:"order_side,omitempty"`
 	// Cursor used for pagination. When provided, the response returns responses after this cursor.
 	Cursor string `json:"cursor,omitempty"`
 	// ProductType Only orders matching this product type are returned. Default is to return all product types.
@@ -348,7 +346,7 @@ type CreateOrderRequest struct {
 	// ProductId string The product this order was created for e.g. 'BTC-USD'
 	ProductID string `json:"product_id"`
 	// OrderType string Possible values: [UNKNOWN_ORDER_SIDE, BUY, SELL]
-	Side               OrderSide          `json:"side"`
+	Side               string             `json:"side"`
 	OrderConfiguration OrderConfiguration `json:"order_configuration"`
 }
 

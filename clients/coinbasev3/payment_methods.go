@@ -1,21 +1,19 @@
 package coinbasev3
 
+import (
+	"context"
+	"github.com/coinbase-samples/advanced-trade-sdk-go/model"
+	"github.com/coinbase-samples/advanced-trade-sdk-go/paymentmethods"
+)
+
 // GetPaymentMethods get payment methods.
-func (c *ApiClient) GetPaymentMethods() (PaymentMethods, error) {
-	u := "https://api.coinbase.com/api/v3/brokerage/payment_methods"
-
-	var result PaymentMethods
-	resp, err := c.client.R().
-		SetSuccessResult(&result).Get(u)
+func (c *ApiClient) GetPaymentMethods(ctx context.Context) ([]*model.PaymentMethod, error) {
+	paymentMethodsService := paymentmethods.NewPaymentMethodsService(c.restClient)
+	paymentMethods, err := paymentMethodsService.ListPaymentMethods(ctx, &paymentmethods.ListPaymentMethodsRequest{})
 	if err != nil {
-		return result, err
+		return []*model.PaymentMethod{}, err
 	}
-
-	if !resp.IsSuccessState() {
-		return result, ErrFailedToUnmarshal
-	}
-
-	return result, nil
+	return paymentMethods.PaymentMethods, nil
 }
 
 // PaymentMethods represents the payment methods.

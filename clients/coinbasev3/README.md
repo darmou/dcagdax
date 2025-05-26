@@ -47,7 +47,7 @@ Resource: [Rest API Pro Mapping](https://docs.cloud.coinbase.com/advanced-trade-
 
 ```go
 // the client will automatically sign requests with the api_key and secret_key using req's OnBeforeRequest callback
-client := coinbasev3.NewApiClient("api_key", "secret_key")
+client := coinbasev3.NewApiClient("api_key", "secret_key", "portfolio_id")
 
 // product is a struct defined in the coinbasev3 package
 product, err := client.GetProduct(productId)

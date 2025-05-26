@@ -1,12 +1,13 @@
 package coinbasev3
 
 import (
+	"context"
 	"fmt"
 	"strings"
 )
 
 // GetProduct get information on a single product by product ID.
-func (c *ApiClient) GetProduct(productId string) (Product, error) {
+func (c *ApiClient) GetProduct(ctx context.Context, productId string) (Product, error) {
 	u := c.makeV3Url(fmt.Sprintf("/brokerage/products/%s", productId))
 
 	var data Product

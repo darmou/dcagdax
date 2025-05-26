@@ -8,8 +8,7 @@ import (
 
 func TestApiClient_GetTransactionSummary(t *testing.T) {
 	api := NewApiClient("api_key", "secret_key")
-
-	httpmock.ActivateNonDefault(api.client.GetClient())
+	httpmock.ActivateNonDefault(api.GetClient().HttpClient())
 	httpmock.RegisterResponder("GET", "https://api.coinbase.com/api/v3/brokerage/transaction_summary", func(request *http.Request) (*http.Response, error) {
 		respBody := `{"advanced_trade_only_fees":0,"advanced_trade_only_volume":0,"coinbase_pro_fees":0,"coinbase_pro_volume":0,"fee_tier":{"aop_from":"","aop_to":"","maker_fee_rate":"0.006","pricing_tier":"Advanced 1","taker_fee_rate":"0.008","usd_from":"0","usd_to":"1000"},"goods_and_services_tax":{"rate":"","type":""},"margin_rate":{"value":""},"total_fees":0,"total_volume":0}`
 		resp := httpmock.NewStringResponse(http.StatusOK, respBody)
